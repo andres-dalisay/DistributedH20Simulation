@@ -60,26 +60,26 @@ int main() {
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         std::cerr << "Error initializing Winsock" << std::endl;
-        return;
+        return 3;
     }
 
     SOCKET server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (server_socket == INVALID_SOCKET) {
         std::cerr << "Error creating socket" << std::endl;
         WSACleanup();
-        return;
+        return 3;
     }
 
     sockaddr_in server_address;
     server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(5000);
+    server_address.sin_port = htons(5001);
     inet_pton(AF_INET, MASTER_SERVER_IP, &server_address.sin_addr);
 
     if (connect(server_socket, reinterpret_cast<SOCKADDR*>(&server_address), sizeof(server_address)) == SOCKET_ERROR) {
         std::cerr << "Error connecting to server" << std::endl;
         closesocket(server_socket);
         WSACleanup();
-        return;
+        return 3;
     }
 
     while (true) {
@@ -112,7 +112,7 @@ int main() {
         }
     }
 
-
+    closesocket(server_socket);
 
     return 0;
 }

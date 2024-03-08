@@ -60,14 +60,14 @@ int main() {
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         std::cerr << "Error initializing Winsock" << std::endl;
-        return;
+        return 3;
     }
 
     SOCKET server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (server_socket == INVALID_SOCKET) {
         std::cerr << "Error creating socket" << std::endl;
         WSACleanup();
-        return;
+        return 3;
     }
 
     sockaddr_in server_address;
@@ -79,11 +79,11 @@ int main() {
         std::cerr << "Error connecting to server" << std::endl;
         closesocket(server_socket);
         WSACleanup();
-        return;
+        return 3;
     }
 
     while (true) {
-        std::cout << "Enter number of oxygen atoms: ";
+        std::cout << "Enter number of hydrogen atoms: ";
         std::cin.getline(hInput, sizeof(hInput));
 
 
@@ -112,7 +112,7 @@ int main() {
         }
     }
 
-
+    closesocket(server_socket);
 
     return 0;
 }

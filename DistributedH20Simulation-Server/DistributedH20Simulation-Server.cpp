@@ -40,7 +40,7 @@ int main() {
     // Bind the client socket to an address and port
     sockaddr_in oClientAddr;
     oClientAddr.sin_family = AF_INET;
-    oClientAddr.sin_port = htons(5000); // Port number
+    oClientAddr.sin_port = htons(5001); // Port number
     oClientAddr.sin_addr.s_addr = INADDR_ANY; // Accept connections from any address
 
     if (bind(oClientSocket, reinterpret_cast<sockaddr*>(&oClientAddr), sizeof(oClientAddr)) == SOCKET_ERROR) {
