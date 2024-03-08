@@ -11,47 +11,47 @@
 #pragma comment(lib, "ws2_32.lib")
 
 #define MASTER_SERVER_IP "127.0.0.1"
-#define O_LIMIT 1048576
+#define H_LIMIT 1048576
 
-void send_task(const char* start_point, const char* end_point) {
-
-    clock_t start, end;
-
-
-    char task[256];
-    snprintf(task, sizeof(task), "%s,%s", start_point, end_point);
-    send(client_socket, task, strlen(task), 0);
-    start = clock();
-
-    std::vector<char> buffer(100000000);
-    int bufferBytes = recv(client_socket, buffer.data(), buffer.size(), 0);
-    end = clock();
-
-
-    buffer.resize(bufferBytes);
-    std::vector<int> primes = deserializeVector(buffer);
-
-    std::cout << "Number of primes: " << primes.size() << std::endl;
-
-    double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
-    std::cout << "Time taken by program is : " << std::fixed << time_taken << std::setprecision(5) << std::endl;
-
-    if (SORT_ARRAY) {
-        std::sort(primes.begin(), primes.end());
-    }
-
-    if (DISPLAY_ARRAY)
-    {
-        std::cout << "Primes: ";
-        for (int prime : primes) {
-            std::cout << prime << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    closesocket(client_socket);
-    WSACleanup();
-}
+//void send_task(const char* start_point, const char* end_point) {
+//
+//    clock_t start, end;
+//
+//
+//    char task[256];
+//    snprintf(task, sizeof(task), "%s,%s", start_point, end_point);
+//    send(client_socket, task, strlen(task), 0);
+//    start = clock();
+//
+//    std::vector<char> buffer(100000000);
+//    int bufferBytes = recv(client_socket, buffer.data(), buffer.size(), 0);
+//    end = clock();
+//
+//
+//    buffer.resize(bufferBytes);
+//    std::vector<int> primes = deserializeVector(buffer);
+//
+//    std::cout << "Number of primes: " << primes.size() << std::endl;
+//
+//    double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+//    std::cout << "Time taken by program is : " << std::fixed << time_taken << std::setprecision(5) << std::endl;
+//
+//    if (SORT_ARRAY) {
+//        std::sort(primes.begin(), primes.end());
+//    }
+//
+//    if (DISPLAY_ARRAY)
+//    {
+//        std::cout << "Primes: ";
+//        for (int prime : primes) {
+//            std::cout << prime << " ";
+//        }
+//        std::cout << std::endl;
+//    }
+//
+//    closesocket(client_socket);
+//    WSACleanup();
+//}
 
 int main() {
     char oInput[100];
@@ -63,8 +63,8 @@ int main() {
         return;
     }
 
-    SOCKET client_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (client_socket == INVALID_SOCKET) {
+    SOCKET server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (server_socket == INVALID_SOCKET) {
         std::cerr << "Error creating socket" << std::endl;
         WSACleanup();
         return;
@@ -75,9 +75,9 @@ int main() {
     server_address.sin_port = htons(5000);
     inet_pton(AF_INET, MASTER_SERVER_IP, &server_address.sin_addr);
 
-    if (connect(client_socket, reinterpret_cast<SOCKADDR*>(&server_address), sizeof(server_address)) == SOCKET_ERROR) {
+    if (connect(server_socket, reinterpret_cast<SOCKADDR*>(&server_address), sizeof(server_address)) == SOCKET_ERROR) {
         std::cerr << "Error connecting to server" << std::endl;
-        closesocket(client_socket);
+        closesocket(server_socket);
         WSACleanup();
         return;
     }
@@ -88,14 +88,14 @@ int main() {
 
 
         try {
-            int o_start_int = std::stoi(oInput);
+            int o_int = std::stoi(oInput);
 
-            if (o_start_int < 0 || o_start_int > O_LIMIT) {
+            if (o_int < 0 || o_int > H_LIMIT) {
                 std::cerr << "Error: Invalid input. ";
-                if (o_start_int < 0) {
+                if (o_int < 0) {
                     std::cerr << "Input must be positive. ";
                 }
-                if (o_start_int > O_LIMIT) {
+                if (o_int > H_LIMIT) {
                     std::cerr << "Input must be less than 1048576. ";
                 }
                 std::cerr << "Please try again." << std::endl;
@@ -112,7 +112,6 @@ int main() {
         }
     }
 
-    send_task(start_point, end_point);
 
 
     return 0;
