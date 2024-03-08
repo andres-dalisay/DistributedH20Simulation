@@ -7,6 +7,10 @@
 #include <vector>
 #include <iomanip>
 #include <algorithm>
+#include <chrono>
+#include <ctime>
+#include <format>
+#include <sstream>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -53,6 +57,11 @@
 //    WSACleanup();
 //}
 
+struct Log {
+    std::string id;
+    std::string type;
+};
+
 int main() {
     char hInput[100];
 
@@ -82,13 +91,15 @@ int main() {
         return 3;
     }
 
+    int h_int;
+
     while (true) {
         std::cout << "Enter number of hydrogen atoms: ";
         std::cin.getline(hInput, sizeof(hInput));
 
 
         try {
-            int h_int = std::stoi(hInput);
+            h_int = std::stoi(hInput);
 
             if (h_int < 0 || h_int > H_LIMIT) {
                 std::cerr << "Error: Invalid input. ";
@@ -111,6 +122,29 @@ int main() {
             std::cerr << "Error: Input out of range." << std::endl;
         }
     }
+
+    std::vector<Log> logs;
+
+    freopen("hydrogen_log.txt", "w", stdout);
+    for (int i = 1; i <= h_int; i++) {
+        Log log;
+        log.id = "H" + std::to_string(i);
+        log.type = "request";
+        logs.push_back(log);
+        // get the current timestamp
+        auto now = std::chrono::system_clock::now();
+        // print the current timestamp
+        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+        std::tm* local_time = std::localtime(&now_c);
+        std::ostringstream oss;
+        oss << std::put_time(local_time, "%Y-%m-%d %H:%M:%S");
+        std::string formatted_time = oss.str();
+        
+        std::printf("%s, %s, %s\n", log.id.c_str(), log.type.c_str(), formatted_time.c_str());
+        
+        //send(server_socket, reinterpret_cast<char*>(&log), sizeof(log), 0);
+    }
+    fclose(stdout);
 
     closesocket(server_socket);
 
