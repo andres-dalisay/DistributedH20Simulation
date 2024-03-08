@@ -11,56 +11,12 @@
 #include <ctime>
 #include <format>
 #include <sstream>
+#include <log.hpp>
 
 #pragma comment(lib, "ws2_32.lib")
 
 #define MASTER_SERVER_IP "127.0.0.1"
 #define H_LIMIT 2097152
-
-//void send_task(const char* start_point, const char* end_point) {
-//
-//    clock_t start, end;
-//
-//
-//    char task[256];
-//    snprintf(task, sizeof(task), "%s,%s", start_point, end_point);
-//    send(client_socket, task, strlen(task), 0);
-//    start = clock();
-//
-//    std::vector<char> buffer(100000000);
-//    int bufferBytes = recv(client_socket, buffer.data(), buffer.size(), 0);
-//    end = clock();
-//
-//
-//    buffer.resize(bufferBytes);
-//    std::vector<int> primes = deserializeVector(buffer);
-//
-//    std::cout << "Number of primes: " << primes.size() << std::endl;
-//
-//    double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
-//    std::cout << "Time taken by program is : " << std::fixed << time_taken << std::setprecision(5) << std::endl;
-//
-//    if (SORT_ARRAY) {
-//        std::sort(primes.begin(), primes.end());
-//    }
-//
-//    if (DISPLAY_ARRAY)
-//    {
-//        std::cout << "Primes: ";
-//        for (int prime : primes) {
-//            std::cout << prime << " ";
-//        }
-//        std::cout << std::endl;
-//    }
-//
-//    closesocket(client_socket);
-//    WSACleanup();
-//}
-
-struct Log {
-    std::string id;
-    std::string type;
-};
 
 int main() {
     char hInput[100];

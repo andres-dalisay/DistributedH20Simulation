@@ -7,12 +7,15 @@
 #include <thread>
 #include <mutex>
 #include <iomanip>
+#include <cereal/archives/binary.hpp>
+#include <log.hpp>
 
 #pragma comment(lib, "ws2_32.lib")
 
 
 std::mutex mtx;
 std::vector<int> primes;
+
 
 int main() {
     WSADATA wsaData;
@@ -82,17 +85,38 @@ int main() {
 
     std::cout << "Server is running..." << std::endl;
 
+
+
+
+
+
+
     while (true) {
         SOCKET o_client_socket = accept(oClientSocket, NULL, NULL);
         if (o_client_socket == INVALID_SOCKET) {
             std::cerr << "Error accepting connection" << std::endl;
-            continue;
         }
         SOCKET h_client_socket = accept(hClientSocket, NULL, NULL);
         if (h_client_socket == INVALID_SOCKET) {
             std::cerr << "Error accepting connection" << std::endl;
         }
- 
+        std::string o_molecule;
+        // receive a string from the o client
+        const int bufferSize = 1024;
+        char buffer[bufferSize];
+        int bytesReceived = recv(o_client_socket, buffer, bufferSize, 0);
+        if (bytesReceived == SOCKET_ERROR) {
+            std::cerr << "Error receiving data" << std::endl;
+        }
+        std::istringstream iss(std::string(buffer, bytesReceived));
+        Log receivedLog;
+        {
+            cereal::BinaryInputArchive archive(iss);
+            archive(receivedLog);
+        }
+        std::cout << "Received: " << receivedLog.id << " " << receivedLog.type << std::endl;
+        // clear buffer
+        memset(buffer, 0, bufferSize);
     }
 
     closesocket(oClientSocket);

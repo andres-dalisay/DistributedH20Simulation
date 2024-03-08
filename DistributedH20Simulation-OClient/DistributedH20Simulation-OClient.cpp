@@ -11,67 +11,14 @@
 #include <ctime>
 #include <format>
 #include <sstream>
+#include <cereal/archives/binary.hpp>
+#include <log.hpp>
 
 #pragma comment(lib, "ws2_32.lib")
 
 #define MASTER_SERVER_IP "127.0.0.1"
 #define H_LIMIT 1048576
 
-//using time_point = std::chrono::system_clock::time_point;
-//std::string serializeTimePoint(const time_point& time, const std::string& format)
-//{
-//    std::time_t tt = std::chrono::system_clock::to_time_t(time);
-//    std::tm tm = *std::gmtime(&tt); //GMT (UTC)
-//    //std::tm tm = *std::localtime(&tt); //Locale time-zone, usually UTC by default.
-//    std::stringstream ss;
-//    ss << std::put_time(&tm, format.c_str());
-//    return ss.str();
-//}
-
-//void send_task(const char* start_point, const char* end_point) {
-//
-//    clock_t start, end;
-//
-//
-//    char task[256];
-//    snprintf(task, sizeof(task), "%s,%s", start_point, end_point);
-//    send(client_socket, task, strlen(task), 0);
-//    start = clock();
-//
-//    std::vector<char> buffer(100000000);
-//    int bufferBytes = recv(client_socket, buffer.data(), buffer.size(), 0);
-//    end = clock();
-//
-//
-//    buffer.resize(bufferBytes);
-//    std::vector<int> primes = deserializeVector(buffer);
-//
-//    std::cout << "Number of primes: " << primes.size() << std::endl;
-//
-//    double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
-//    std::cout << "Time taken by program is : " << std::fixed << time_taken << std::setprecision(5) << std::endl;
-//
-//    if (SORT_ARRAY) {
-//        std::sort(primes.begin(), primes.end());
-//    }
-//
-//    if (DISPLAY_ARRAY)
-//    {
-//        std::cout << "Primes: ";
-//        for (int prime : primes) {
-//            std::cout << prime << " ";
-//        }
-//        std::cout << std::endl;
-//    }
-//
-//    closesocket(client_socket);
-//    WSACleanup();
-//}
-
-struct Log {
-    std::string id;
-    std::string type;
-};
 
 
 
@@ -162,14 +109,17 @@ int main() {
             std::cerr << "Error: Input out of range." << std::endl;
         }
     }
-    std::vector<Log> logs;
 
     freopen("oxygen_log.txt", "w", stdout);
     for (int i = 1; i <= o_int; i++) {
         Log log;
-		log.id = "O" + std::to_string(i);
-		log.type = "request";
-        logs.push_back(log);
+        log.id = "O" + std::to_string(i);
+        log.type = "request";
+        std::stringstream ss;
+        {
+            cereal::BinaryOutputArchive oarchive(ss);
+            oarchive(log);
+        }
         // get the current timestamp
         auto now = std::chrono::system_clock::now();
         // print the current timestamp
@@ -178,14 +128,19 @@ int main() {
         std::ostringstream oss;
         oss << std::put_time(local_time, "%Y-%m-%d %H:%M:%S");
         std::string formatted_time = oss.str();
-        
+
         std::printf("%s, %s, %s\n", log.id.c_str(), log.type.c_str(), formatted_time.c_str());
-        
-        //send(server_socket, reinterpret_cast<char*>(&log), sizeof(log), 0);
+
+        // Serialize the log struct
+        std::string serializedLog = ss.str();
+        // Send the serialized log data to the server
+        send(server_socket, serializedLog.c_str(), serializedLog.size(), 0);
+
 	}
     fclose(stdout);
 
     closesocket(server_socket);
+    WSACleanup();
 
     return 0;
 }
