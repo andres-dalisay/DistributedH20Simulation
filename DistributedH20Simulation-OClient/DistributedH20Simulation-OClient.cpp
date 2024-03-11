@@ -112,14 +112,7 @@ int main() {
 
     freopen("oxygen_log.txt", "w", stdout);
     for (int i = 1; i <= o_int; i++) {
-        Log log;
-        log.id = "O" + std::to_string(i);
-        log.type = "request";
-        std::stringstream ss;
-        {
-            cereal::BinaryOutputArchive oarchive(ss);
-            oarchive(log);
-        }
+        std::string logString = "O" + std::to_string(i) + " request \0\0";
         // get the current timestamp
         auto now = std::chrono::system_clock::now();
         // print the current timestamp
@@ -129,14 +122,20 @@ int main() {
         oss << std::put_time(local_time, "%Y-%m-%d %H:%M:%S");
         std::string formatted_time = oss.str();
 
-        std::printf("%s, %s, %s\n", log.id.c_str(), log.type.c_str(), formatted_time.c_str());
+        //logString += formatted_time;
 
-        // Serialize the log struct
-        std::string serializedLog = ss.str();
+        std::printf("%s\n", logString.c_str());
+
         // Send the serialized log data to the server
-        send(server_socket, serializedLog.c_str(), serializedLog.size(), 0);
+        int bytesSent = send(server_socket, logString.c_str(), logString.size(), 0);
+        if (bytesSent == SOCKET_ERROR) {
+            std::cerr << "Failed to send data.\n";
+            closesocket(server_socket);
+            WSACleanup();
+            return 1;
+        }
 
-	}
+    }
     fclose(stdout);
 
     closesocket(server_socket);
