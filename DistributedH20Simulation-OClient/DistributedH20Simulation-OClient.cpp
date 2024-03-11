@@ -112,7 +112,8 @@ int main() {
 
     freopen("oxygen_log.txt", "w", stdout);
     for (int i = 1; i <= o_int; i++) {
-        std::string logString = "O" + std::to_string(i) + " request \0\0";
+        std::string logString = "O " + std::string(7 - std::to_string(i).length(), '0') + " " + std::to_string(i) + " R";
+
         // get the current timestamp
         auto now = std::chrono::system_clock::now();
         // print the current timestamp
