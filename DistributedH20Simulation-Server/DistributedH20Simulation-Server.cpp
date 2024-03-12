@@ -16,6 +16,52 @@
 std::mutex mtx;
 std::vector<int> primes;
 
+void acceptClient(SOCKET clientSocket, int element) {
+	SOCKET client_socket;
+	sockaddr_in clientAddr;
+	int clientAddrSize = sizeof(clientAddr);
+	client_socket = accept(clientSocket, reinterpret_cast<sockaddr*>(&clientAddr), &clientAddrSize);
+    if (client_socket == INVALID_SOCKET) {
+		std::cerr << "Accept failed.\n";
+		closesocket(clientSocket);
+		WSACleanup();
+		return;
+	}
+
+	const int bufferSize = 1024;
+	char buffer[bufferSize];
+	int bytesReceived;
+
+    do {
+		bytesReceived = recv(client_socket, buffer, bufferSize - 1, 0); // Leave space for null terminator
+        if (bytesReceived > 0) {
+			buffer[bytesReceived] = '\0'; // Null-terminate the received data
+			std::string receivedData(buffer);
+
+			// Split the received data into separate strings
+			std::istringstream iss(receivedData);
+			std::string line;
+			while (std::getline(iss, line, '\n')) { // Use '\n' as the delimiter
+                std::cout << "Received: " << line << std::endl;
+                if (element == 0) {
+					
+				}
+                else {
+
+                }
+            }
+		}
+        else if (bytesReceived == 0) {
+			std::cout << "Connection closed by peer.\n";
+		}
+        else {
+			std::cerr << "Receive failed.\n";
+		}
+	} while (bytesReceived > 0);
+
+	closesocket(client_socket);
+}
+
 
 int main() {
     WSADATA wsaData;
@@ -85,7 +131,7 @@ int main() {
 
     std::cout << "Server is running..." << std::endl;
 
-    SOCKET o_client_socket;
+    /*SOCKET o_client_socket;
     sockaddr_in o_clientAddr;
     int o_clientAddrSize = sizeof(o_clientAddr);
     o_client_socket = accept(oClientSocket, reinterpret_cast<sockaddr*>(&o_clientAddr), &o_clientAddrSize);
@@ -94,7 +140,7 @@ int main() {
         closesocket(oClientSocket);
         WSACleanup();
         return 1;
-    }
+    }*/
 
     //SOCKET h_client_socket;
 
@@ -104,33 +150,37 @@ int main() {
             std::cerr << "Error accepting connection" << std::endl;
         }*/
 
-    const int bufferSize = 1024;
-    char buffer[bufferSize];
-    int bytesReceived;
+    //const int bufferSize = 1024;
+    //char buffer[bufferSize];
+    //int bytesReceived;
 
 
-do {
-    bytesReceived = recv(o_client_socket, buffer, bufferSize - 1, 0); // Leave space for null terminator
-    if (bytesReceived > 0) {
-        buffer[bytesReceived] = '\0'; // Null-terminate the received data
-        std::string receivedData(buffer);
+    //do {
+    //    bytesReceived = recv(o_client_socket, buffer, bufferSize - 1, 0); // Leave space for null terminator
+    //    if (bytesReceived > 0) {
+    //        buffer[bytesReceived] = '\0'; // Null-terminate the received data
+    //        std::string receivedData(buffer);
 
-        // Split the received data into separate strings
-        std::istringstream iss(receivedData);
-        std::string line;
-        while (std::getline(iss, line, '\n')) { // Use '\n' as the delimiter
-            std::cout << "Received: " << line << std::endl;
-        }
-    }
-    else if (bytesReceived == 0) {
-        std::cout << "Connection closed by peer.\n";
-    }
-    else {
-        std::cerr << "Receive failed.\n";
-    }
-} while (bytesReceived > 0);
+    //        // Split the received data into separate strings
+    //        std::istringstream iss(receivedData);
+    //        std::string line;
+    //        while (std::getline(iss, line, '\n')) { // Use '\n' as the delimiter
+    //            std::cout << "Received: " << line << std::endl;
+    //        }
+    //    }
+    //    else if (bytesReceived == 0) {
+    //        std::cout << "Connection closed by peer.\n";
+    //    }
+    //    else {
+    //        std::cerr << "Receive failed.\n";
+    //    }
+    //} while (bytesReceived > 0);
 
-    closesocket(o_client_socket);
+    std::thread acceptOxygenClientThread(acceptClient, oClientSocket, 0);
+    acceptOxygenClientThread.join();
+
+
+    //closesocket(o_client_socket);
     closesocket(oClientSocket);
     //closesocket(hClientSocket);
     WSACleanup();
