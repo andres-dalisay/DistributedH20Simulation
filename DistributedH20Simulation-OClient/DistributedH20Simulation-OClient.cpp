@@ -79,9 +79,10 @@ int main() {
     }
 
     int o_int;
+    timestamp ts;
 
     while (true) {
-        std::cout << "Enter number of oxygen atoms: ";
+        std::cout << "Enter number of oxygen atoms (LIMIT = " << O_LIMIT << "): ";
         std::cin.getline(oInput, sizeof(oInput));
 
 
@@ -112,20 +113,8 @@ int main() {
 
     freopen("oxygen_log.txt", "w", stdout);
     for (int i = 1; i <= o_int; i++) {
-        std::string logString = "O" + std::string(std::to_string(i)) + ", request\n";
-
-        // get the current timestamp
-        auto now = std::chrono::system_clock::now();
-        // print the current timestamp
-        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-        std::tm* local_time = std::localtime(&now_c);
-        std::ostringstream oss;
-        oss << std::put_time(local_time, "%Y-%m-%d %H:%M:%S");
-        std::string formatted_time = oss.str();
-
-        //logString += formatted_time;
-
-        std::printf("%s\n", logString.c_str());
+        std::string logString = "O" + std::string(std::to_string(i)) + ", request, " + ts.getCurrentTime() + "\n";
+        std::printf("%s", logString.c_str());
 
         // Send the serialized log data to the server
         int bytesSent = send(server_socket, logString.c_str(), logString.size(), 0);
@@ -138,6 +127,26 @@ int main() {
 
     }
     fclose(stdout);
+
+    const int bufferSize = 1024;
+    char buffer[bufferSize];
+    int bytesReceived;
+
+    //do {
+    //    bytesReceived = recv(server_socket, buffer, bufferSize - 1, 0); // Leave space for null terminator
+    //    if (bytesReceived > 0) {
+    //        buffer[bytesReceived] = '\0'; // Null-terminate the received data
+    //        std::string receivedData(buffer);
+
+    //        // Split the received data into separate strings
+    //        std::istringstream iss(receivedData);
+    //        std::string line;
+    //        while (std::getline(iss, line, '\n')) { // Use '\n' as the delimiter
+    //            timestamp ts;
+    //            std::cout << line << std::endl;
+    //        }
+    //    }
+    //} while (bytesReceived > 0);
 
     closesocket(server_socket);
     WSACleanup();

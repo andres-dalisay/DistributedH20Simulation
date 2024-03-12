@@ -8,33 +8,9 @@
 #include <mutex>
 #include <iomanip>
 #include <cereal/archives/binary.hpp>
-//#include <log.hpp>
+#include <log.hpp>
 
 #pragma comment(lib, "ws2_32.lib")
-
-struct Log {
-    std::string id;
-    std::string type;
-};
-
-struct timestamp {
-    std::string convertTime() {
-        // Get the current timestamp
-        auto now = std::chrono::system_clock::now();
-
-        // Convert to time_t
-        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-
-        // Convert to local time using localtime_s
-        std::tm local_time;
-        localtime_s(&local_time, &now_c);
-
-        // Format the local time
-        std::ostringstream oss;
-        oss << std::put_time(&local_time, "%Y-%m-%d %H:%M:%S");
-        return oss.str();
-	}
-};
 
 std::mutex oxygenMtx;
 std::mutex hydrogenMtx;
@@ -42,21 +18,11 @@ std::vector<Log> oxygenVector;
 std::vector<Log> hydrogenVector;
 std::vector<std::string> waterVector;
 
-void acceptClient(SOCKET clientSocket, int atom) {
-	SOCKET client_socket;
-	sockaddr_in clientAddr;
-	int clientAddrSize = sizeof(clientAddr);
-	client_socket = accept(clientSocket, reinterpret_cast<sockaddr*>(&clientAddr), &clientAddrSize);
-    if (client_socket == INVALID_SOCKET) {
-		std::cerr << "Accept failed.\n";
-		closesocket(clientSocket);
-		WSACleanup();
-		return;
-	}
-
+void acceptClient(SOCKET client_socket, int atom) {
 	const int bufferSize = 1024;
 	char buffer[bufferSize];
 	int bytesReceived;
+    timestamp ts;
 
     do {
 		bytesReceived = recv(client_socket, buffer, bufferSize - 1, 0); // Leave space for null terminator
@@ -68,7 +34,8 @@ void acceptClient(SOCKET clientSocket, int atom) {
 			std::istringstream iss(receivedData);
 			std::string line;
 			while (std::getline(iss, line, '\n')) { // Use '\n' as the delimiter
-                std::cout << "Received: " << line << std::endl;
+                
+                std::cout << line << " " << ts.getCurrentTime() << std::endl;
                 Log log;
                 if (atom == 0) {
                     std::lock_guard<std::mutex> lock(oxygenMtx);
@@ -97,18 +64,22 @@ void acceptClient(SOCKET clientSocket, int atom) {
 	closesocket(client_socket);
 }
 
-void bindAtoms() {
+void bindAtoms(SOCKET oSocket, SOCKET hSocket) {
     while (true) {
         oxygenMtx.lock();
         if (oxygenVector.size() >= 1) {
             hydrogenMtx.lock();
             if (hydrogenVector.size() >= 2) {
-                /*std::cout << "Binding atoms..." << std::endl;
-                std::cout << "Oxygen: " << oxygenVector[0].id << std::endl;
-                std::cout << "Hydrogen: " << hydrogenVector[0].id << ", " << hydrogenVector[1].id << std::endl;*/
-                timestamp timestamp;
-                std::string waterString = "Water: " + oxygenVector[0].id + ", " + hydrogenVector[0].id + ", " + hydrogenVector[1].id + "," + timestamp.convertTime();
-                waterVector.push_back(waterString);
+                timestamp ts;
+                std::string oxygenLogString = oxygenVector[0].id + ", bonded, " + ts.getCurrentTime() + "\n";
+                std::string hydrogenLogString1 = hydrogenVector[0].id + ", bonded, " + ts.getCurrentTime() + "\n";
+                std::string hydrogenLogString2 = hydrogenVector[1].id + ", bonded, " + ts.getCurrentTime() + "\n";
+                std::cout << oxygenLogString;
+                std::cout << hydrogenLogString1;
+                std::cout << hydrogenLogString2;
+                send(oSocket, oxygenLogString.c_str(), oxygenLogString.size(), 0);
+                send(hSocket, hydrogenLogString1.c_str(), hydrogenLogString1.size(), 0);
+                send(hSocket, hydrogenLogString2.c_str(), hydrogenLogString2.size(), 0);
                 oxygenVector.erase(oxygenVector.begin());
                 hydrogenVector.erase(hydrogenVector.begin(), hydrogenVector.begin() + 2);
             }
@@ -186,14 +157,34 @@ int main() {
 
     std::cout << "Server is running..." << std::endl;
 
+    SOCKET o_client_socket;
+    int oClientAddrSize = sizeof(oClientAddr);
+    o_client_socket = accept(oClientSocket, reinterpret_cast<sockaddr*>(&oClientAddr), &oClientAddrSize);
+    if (o_client_socket == INVALID_SOCKET) {
+        std::cerr << "Accept failed.\n";
+        closesocket(oClientSocket);
+        WSACleanup();
+        return 3;
+    }
+
+    SOCKET h_client_socket;
+    int hClientAddrSize = sizeof(hClientAddr);
+    h_client_socket = accept(hClientSocket, reinterpret_cast<sockaddr*>(&hClientAddr), &hClientAddrSize);
+    if (h_client_socket == INVALID_SOCKET) {
+        std::cerr << "Accept failed.\n";
+        closesocket(hClientSocket);
+        WSACleanup();
+        return 3;
+    }
+
     
-    std::thread acceptOxygenClientThread(acceptClient, oClientSocket, 0);
+    std::thread acceptOxygenClientThread(acceptClient, o_client_socket, 0);
     acceptOxygenClientThread.join();
 
-    std::thread acceptHydrogenClientThread(acceptClient, hClientSocket, 1);
+    std::thread acceptHydrogenClientThread(acceptClient, h_client_socket, 1);
     acceptHydrogenClientThread.join();
 
-    std::thread bindAtomsThread(bindAtoms);
+    std::thread bindAtomsThread(bindAtoms, o_client_socket, h_client_socket);
     bindAtomsThread.join();
 
 
