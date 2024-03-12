@@ -77,6 +77,23 @@ void acceptClient(SOCKET clientSocket, int atom) {
 	closesocket(client_socket);
 }
 
+void bindAtoms() {
+    while (true) {
+        oxygenMtx.lock();
+        if (oxygenVector.size() >= 1) {
+            hydrogenMtx.lock();
+            if (hydrogenVector.size() >= 2) {
+                std::cout << "Binding atoms..." << std::endl;
+                std::cout << "Oxygen: " << oxygenVector[0].id << std::endl;
+                std::cout << "Hydrogen: " << hydrogenVector[0].id << ", " << hydrogenVector[1].id << std::endl;
+                oxygenVector.erase(oxygenVector.begin());
+                hydrogenVector.erase(hydrogenVector.begin(), hydrogenVector.begin() + 2);
+            }
+            hydrogenMtx.unlock();
+        }
+        oxygenMtx.unlock();
+    }
+}
 
 int main() {
     WSADATA wsaData;
@@ -153,7 +170,9 @@ int main() {
     std::thread acceptHydrogenClientThread(acceptClient, hClientSocket, 1);
     acceptHydrogenClientThread.join();
 
-   
+    std::thread bindAtomsThread(bindAtoms);
+    bindAtomsThread.join();
+
 
     closesocket(oClientSocket);
     closesocket(hClientSocket);
