@@ -78,13 +78,13 @@ int main() {
         return 1;
     }
 
-    //// Create a socket for clients
-    //SOCKET hClientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    //if (hClientSocket == INVALID_SOCKET) {
-    //    std::cout << "Hydrogen client socket creation failed." << std::endl;
-    //    WSACleanup();
-    //    return 1;
-    //}
+    // Create a socket for clients
+    SOCKET hClientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (hClientSocket == INVALID_SOCKET) {
+        std::cout << "Hydrogen client socket creation failed." << std::endl;
+        WSACleanup();
+        return 1;
+    }
 
     // Bind the client socket to an address and port
     sockaddr_in oClientAddr;
@@ -100,18 +100,18 @@ int main() {
     }
 
 
-    //// Bind the client socket to an address and port
-    //sockaddr_in hClientAddr;
-    //hClientAddr.sin_family = AF_INET;
-    //hClientAddr.sin_port = htons(5000); // Port number
-    //hClientAddr.sin_addr.s_addr = INADDR_ANY; // Accept connections from any address
+    // Bind the client socket to an address and port
+    sockaddr_in hClientAddr;
+    hClientAddr.sin_family = AF_INET;
+    hClientAddr.sin_port = htons(5000); // Port number
+    hClientAddr.sin_addr.s_addr = INADDR_ANY; // Accept connections from any address
 
-    //if (bind(hClientSocket, reinterpret_cast<sockaddr*>(&hClientAddr), sizeof(hClientAddr)) == SOCKET_ERROR) {
-    //    std::cout << "Hydrogen client socket bind failed." << std::endl;
-    //    closesocket(hClientSocket);
-    //    WSACleanup();
-    //    return 1;
-    //}
+    if (bind(hClientSocket, reinterpret_cast<sockaddr*>(&hClientAddr), sizeof(hClientAddr)) == SOCKET_ERROR) {
+        std::cout << "Hydrogen client socket bind failed." << std::endl;
+        closesocket(hClientSocket);
+        WSACleanup();
+        return 1;
+    }
 
     // Listen for incoming connections on the client socket
     if (listen(oClientSocket, SOMAXCONN) == SOCKET_ERROR) {
@@ -121,13 +121,13 @@ int main() {
         return 1;
     }
 
-    //// Listen for incoming connections on the slave socket
-    //if (listen(hClientSocket, SOMAXCONN) == SOCKET_ERROR) {
-    //    std::cout << "Hydrogen socket listen failed." << std::endl;
-    //    closesocket(hClientSocket);
-    //    WSACleanup();
-    //    return 1;
-    //}
+    // Listen for incoming connections on the slave socket
+    if (listen(hClientSocket, SOMAXCONN) == SOCKET_ERROR) {
+        std::cout << "Hydrogen socket listen failed." << std::endl;
+        closesocket(hClientSocket);
+        WSACleanup();
+        return 1;
+    }
 
     std::cout << "Server is running..." << std::endl;
 
@@ -135,10 +135,13 @@ int main() {
     std::thread acceptOxygenClientThread(acceptClient, oClientSocket, 0);
     acceptOxygenClientThread.join();
 
+    std::thread acceptHydrogenClientThread(acceptClient, hClientSocket, 1);
+    acceptHydrogenClientThread.join();
+
 
 
     closesocket(oClientSocket);
-    //closesocket(hClientSocket);
+    closesocket(hClientSocket);
     WSACleanup();
     return 0;
 }

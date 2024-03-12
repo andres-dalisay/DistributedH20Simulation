@@ -364,3 +364,4 @@ FodyWeavers.xsd
 
 .vscode/
 /DistributedH20Simulation-OClient/oxygen_log.txt
+/DistributedH20Simulation-HClient/hydrogen_log.txt
