@@ -17,10 +17,30 @@ struct Log {
     std::string type;
 };
 
+struct timestamp {
+    std::string convertTime() {
+        // Get the current timestamp
+        auto now = std::chrono::system_clock::now();
+
+        // Convert to time_t
+        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+
+        // Convert to local time using localtime_s
+        std::tm local_time;
+        localtime_s(&local_time, &now_c);
+
+        // Format the local time
+        std::ostringstream oss;
+        oss << std::put_time(&local_time, "%Y-%m-%d %H:%M:%S");
+        return oss.str();
+	}
+};
+
 std::mutex oxygenMtx;
 std::mutex hydrogenMtx;
 std::vector<Log> oxygenVector;
 std::vector<Log> hydrogenVector;
+std::vector<std::string> waterVector;
 
 void acceptClient(SOCKET clientSocket, int atom) {
 	SOCKET client_socket;
@@ -83,9 +103,12 @@ void bindAtoms() {
         if (oxygenVector.size() >= 1) {
             hydrogenMtx.lock();
             if (hydrogenVector.size() >= 2) {
-                std::cout << "Binding atoms..." << std::endl;
+                /*std::cout << "Binding atoms..." << std::endl;
                 std::cout << "Oxygen: " << oxygenVector[0].id << std::endl;
-                std::cout << "Hydrogen: " << hydrogenVector[0].id << ", " << hydrogenVector[1].id << std::endl;
+                std::cout << "Hydrogen: " << hydrogenVector[0].id << ", " << hydrogenVector[1].id << std::endl;*/
+                timestamp timestamp;
+                std::string waterString = "Water: " + oxygenVector[0].id + ", " + hydrogenVector[0].id + ", " + hydrogenVector[1].id + "," + timestamp.convertTime();
+                waterVector.push_back(waterString);
                 oxygenVector.erase(oxygenVector.begin());
                 hydrogenVector.erase(hydrogenVector.begin(), hydrogenVector.begin() + 2);
             }
