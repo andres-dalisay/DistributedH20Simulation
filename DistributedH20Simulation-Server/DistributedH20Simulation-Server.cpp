@@ -8,13 +8,19 @@
 #include <mutex>
 #include <iomanip>
 #include <cereal/archives/binary.hpp>
-#include <log.hpp>
+//#include <log.hpp>
 
 #pragma comment(lib, "ws2_32.lib")
 
+struct Log {
+    std::string id;
+    std::string type;
+};
 
-std::mutex mtx;
-std::vector<int> primes;
+std::mutex oxygenMtx;
+std::mutex hydrogenMtx;
+std::vector<Log> oxygenVector;
+std::vector<Log> hydrogenVector;
 
 void acceptClient(SOCKET clientSocket, int element) {
 	SOCKET client_socket;
@@ -43,12 +49,21 @@ void acceptClient(SOCKET clientSocket, int element) {
 			std::string line;
 			while (std::getline(iss, line, '\n')) { // Use '\n' as the delimiter
                 std::cout << "Received: " << line << std::endl;
+                Log log;
                 if (element == 0) {
-					
+                    std::lock_guard<std::mutex> lock(oxygenMtx);
+					std::istringstream iss(line);
+                    std::getline(iss, log.id, ','); 
+                    std::getline(iss, log.type);
+					oxygenVector.push_back(log);
 				}
-                else {
-
-                }
+				else if (element == 1) {
+					std::lock_guard<std::mutex> lock(hydrogenMtx);
+					std::istringstream iss(line);
+                    std::getline(iss, log.id, ',');
+                    std::getline(iss, log.type);
+					hydrogenVector.push_back(log);
+				}
             }
 		}
         else if (bytesReceived == 0) {
