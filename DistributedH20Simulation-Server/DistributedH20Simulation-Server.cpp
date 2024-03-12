@@ -104,30 +104,31 @@ int main() {
             std::cerr << "Error accepting connection" << std::endl;
         }*/
 
-    const int bufferSize = 12;
+    const int bufferSize = 1024;
     char buffer[bufferSize];
     int bytesReceived;
 
 
-    do {
-        bytesReceived = recv(o_client_socket, buffer, bufferSize, 0);
-        std::cout << bytesReceived;
-        if (bytesReceived > 0) {
+do {
+    bytesReceived = recv(o_client_socket, buffer, bufferSize - 1, 0); // Leave space for null terminator
+    if (bytesReceived > 0) {
+        buffer[bytesReceived] = '\0'; // Null-terminate the received data
+        std::string receivedData(buffer);
 
-            /*std::string strBuffer(buffer);
-            std::stringstream ss(strBuffer);
-            std::string id, type, timestamp;
-            ss >> id >> type;*/
-
-            std::cout << "Received: " << std::string(buffer, bytesReceived) << std::endl;
+        // Split the received data into separate strings
+        std::istringstream iss(receivedData);
+        std::string line;
+        while (std::getline(iss, line, '\n')) { // Use '\n' as the delimiter
+            std::cout << "Received: " << line << std::endl;
         }
-        else if (bytesReceived == 0) {
-            std::cout << "Connection closed by peer.\n";
-        }
-        else {
-            std::cerr << "Receive failed.\n";
-        }
-    } while (bytesReceived > 0);
+    }
+    else if (bytesReceived == 0) {
+        std::cout << "Connection closed by peer.\n";
+    }
+    else {
+        std::cerr << "Receive failed.\n";
+    }
+} while (bytesReceived > 0);
 
     closesocket(o_client_socket);
     closesocket(oClientSocket);
