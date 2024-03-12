@@ -17,7 +17,7 @@
 #pragma comment(lib, "ws2_32.lib")
 
 #define MASTER_SERVER_IP "127.0.0.1"
-#define H_LIMIT 1048576
+#define O_LIMIT 1048576
 
 
 
@@ -88,12 +88,12 @@ int main() {
         try {
 
             o_int = std::stoi(oInput);
-            if (o_int < 0 || o_int > H_LIMIT) {
+            if (o_int < 0 || o_int > O_LIMIT) {
                 std::cerr << "Error: Invalid input. ";
                 if (o_int < 0) {
                     std::cerr << "Input must be positive. ";
                 }
-                if (o_int > H_LIMIT) {
+                if (o_int > O_LIMIT) {
                     std::cerr << "Input must be less than 1048576. ";
                 }
                 std::cerr << "Please try again." << std::endl;
