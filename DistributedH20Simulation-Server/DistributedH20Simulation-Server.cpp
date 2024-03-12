@@ -22,7 +22,7 @@ std::mutex hydrogenMtx;
 std::vector<Log> oxygenVector;
 std::vector<Log> hydrogenVector;
 
-void acceptClient(SOCKET clientSocket, int element) {
+void acceptClient(SOCKET clientSocket, int atom) {
 	SOCKET client_socket;
 	sockaddr_in clientAddr;
 	int clientAddrSize = sizeof(clientAddr);
@@ -50,14 +50,14 @@ void acceptClient(SOCKET clientSocket, int element) {
 			while (std::getline(iss, line, '\n')) { // Use '\n' as the delimiter
                 std::cout << "Received: " << line << std::endl;
                 Log log;
-                if (element == 0) {
+                if (atom == 0) {
                     std::lock_guard<std::mutex> lock(oxygenMtx);
 					std::istringstream iss(line);
                     std::getline(iss, log.id, ','); 
                     std::getline(iss, log.type);
 					oxygenVector.push_back(log);
 				}
-				else if (element == 1) {
+				else if (atom == 1) {
 					std::lock_guard<std::mutex> lock(hydrogenMtx);
 					std::istringstream iss(line);
                     std::getline(iss, log.id, ',');
@@ -153,7 +153,7 @@ int main() {
     std::thread acceptHydrogenClientThread(acceptClient, hClientSocket, 1);
     acceptHydrogenClientThread.join();
 
-
+   
 
     closesocket(oClientSocket);
     closesocket(hClientSocket);
