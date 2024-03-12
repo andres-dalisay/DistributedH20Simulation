@@ -83,10 +83,8 @@ int main() {
 
     freopen("hydrogen_log.txt", "w", stdout);
     for (int i = 1; i <= h_int; i++) {
-        Log log;
-        log.id = "H" + std::to_string(i);
-        log.type = "request";
-        logs.push_back(log);
+        std::string logString = "H" + std::string(std::to_string(i)) + ", request\n";
+
         // get the current timestamp
         auto now = std::chrono::system_clock::now();
         // print the current timestamp
@@ -95,14 +93,25 @@ int main() {
         std::ostringstream oss;
         oss << std::put_time(local_time, "%Y-%m-%d %H:%M:%S");
         std::string formatted_time = oss.str();
-        
-        std::printf("%s, %s, %s\n", log.id.c_str(), log.type.c_str(), formatted_time.c_str());
-        
-        //send(server_socket, reinterpret_cast<char*>(&log), sizeof(log), 0);
+
+        //logString += formatted_time;
+
+        std::printf("%s\n", logString.c_str());
+
+        // Send the serialized log data to the server
+        int bytesSent = send(server_socket, logString.c_str(), logString.size(), 0);
+        if (bytesSent == SOCKET_ERROR) {
+            std::cerr << "Failed to send data.\n";
+            closesocket(server_socket);
+            WSACleanup();
+            return 1;
+        }
+
     }
     fclose(stdout);
 
     closesocket(server_socket);
+    WSACleanup();
 
     return 0;
 }
