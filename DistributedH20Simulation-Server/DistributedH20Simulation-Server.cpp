@@ -35,7 +35,7 @@ void acceptClient(SOCKET client_socket, int atom) {
 			std::string line;
 			while (std::getline(iss, line, '\n')) { // Use '\n' as the delimiter
                 
-                std::cout << line << " " << ts.getCurrentTime() << std::endl;
+                std::cout << line << ", " << ts.getCurrentTime() << std::endl;
                 Log log;
                 if (atom == 0) {
                     std::lock_guard<std::mutex> lock(oxygenMtx);
@@ -179,14 +179,16 @@ int main() {
 
     
     std::thread acceptOxygenClientThread(acceptClient, o_client_socket, 0);
-    acceptOxygenClientThread.join();
-
     std::thread acceptHydrogenClientThread(acceptClient, h_client_socket, 1);
-    acceptHydrogenClientThread.join();
-
     std::thread bindAtomsThread(bindAtoms, o_client_socket, h_client_socket);
-    bindAtomsThread.join();
 
+    acceptOxygenClientThread.detach();
+    acceptHydrogenClientThread.detach();
+    bindAtomsThread.detach();
+
+    while (true) {
+
+    }
 
     closesocket(oClientSocket);
     closesocket(hClientSocket);

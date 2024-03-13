@@ -11,43 +11,12 @@
 #include <ctime>
 #include <format>
 #include <sstream>
-#include <cereal/archives/binary.hpp>
 #include <log.hpp>
 
 #pragma comment(lib, "ws2_32.lib")
 
 #define MASTER_SERVER_IP "127.0.0.1"
 #define O_LIMIT 1048576
-
-
-
-
-// Function to serialize a vector of integers into a byte stream
-std::vector<char> serializeVector(const std::vector<int>& vec) {
-    std::vector<char> bytes;
-    // Assuming integers are 4 bytes each
-    for (int num : vec) {
-        // Convert each integer to bytes
-        char* numBytes = reinterpret_cast<char*>(&num);
-        for (size_t i = 0; i < sizeof(num); ++i) {
-            bytes.push_back(numBytes[i]);
-        }
-    }
-    return bytes;
-}
-
-// Function to deserialize a byte stream into a vector of integers
-std::vector<int> deserializeVector(const std::vector<char>& bytes) {
-    std::vector<int> vec;
-    // Assuming integers are 4 bytes each
-    for (size_t i = 0; i < bytes.size(); i += sizeof(int)) {
-        int num;
-        // Convert bytes back to integer
-        memcpy(&num, &bytes[i], sizeof(int));
-        vec.push_back(num);
-    }
-    return vec;
-}
 
 int main() {
     char oInput[100];
@@ -113,7 +82,7 @@ int main() {
 
     freopen("oxygen_log.txt", "w", stdout);
     for (int i = 1; i <= o_int; i++) {
-        std::string logString = "O" + std::string(std::to_string(i)) + ", request, " + ts.getCurrentTime() + "\n";
+        std::string logString = "O" + std::string(std::to_string(i)) + ", request\n";
         std::printf("%s", logString.c_str());
 
         // Send the serialized log data to the server
@@ -127,7 +96,7 @@ int main() {
 
     }
     fclose(stdout);
-
+    
     const int bufferSize = 1024;
     char buffer[bufferSize];
     int bytesReceived;

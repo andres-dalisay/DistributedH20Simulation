@@ -82,7 +82,7 @@ int main() {
 
     freopen("hydrogen_log.txt", "w", stdout);
     for (int i = 1; i <= h_int; i++) {
-        std::string logString = "H" + std::string(std::to_string(i)) + ", request, " + ts.getCurrentTime() + "\n";
+        std::string logString = "H" + std::string(std::to_string(i)) + ", request\n";
         std::printf("%s", logString.c_str());
 
         // Send the serialized log data to the server
