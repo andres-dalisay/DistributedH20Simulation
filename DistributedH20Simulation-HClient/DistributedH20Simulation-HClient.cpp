@@ -10,6 +10,7 @@
 #include <chrono>
 #include <ctime>
 #include <format>
+#include <fstream>
 #include <sstream>
 #include <log.hpp>
 
@@ -80,10 +81,16 @@ int main() {
         }
     }
 
-    freopen("hydrogen_log.txt", "w", stdout);
+    std::cout << "Logging Hydrogen..." << std::endl;
+
+    std::ofstream logFile("hydrogen_log.txt");
     for (int i = 1; i <= h_int; i++) {
-        std::string logString = "H" + std::string(std::to_string(i)) + ", request\n";
-        std::printf("%s", logString.c_str());
+        std::string currentTime = ts.getCurrentTime(); // Gets Current Timestamp to print on Logs
+        std::string logString = "H" + std::string(std::to_string(i)) + ", request";
+        logFile << logString << ", " << currentTime << std::endl;
+
+        // Just for formatting on the server
+        logString = logString + "\n";
 
         // Send the serialized log data to the server
         int bytesSent = send(server_socket, logString.c_str(), logString.size(), 0);
@@ -95,26 +102,38 @@ int main() {
         }
 
     }
-    fclose(stdout);
-    //const int bufferSize = 1024;
-    //char buffer[bufferSize];
-    //int bytesReceived;
+    const int bufferSize = 2056;
+    char buffer[bufferSize];
+    int bytesReceived;
+    int i = 0;
 
-    //do {
-    //    bytesReceived = recv(server_socket, buffer, bufferSize - 1, 0); // Leave space for null terminator
-    //    if (bytesReceived > 0) {
-    //        buffer[bytesReceived] = '\0'; // Null-terminate the received data
-    //        std::string receivedData(buffer);
+    do {
+        bytesReceived = recv(server_socket, buffer, bufferSize - 1, 0); // Attempt to receive data, leaving space for null terminator
+        if (bytesReceived > 0) {
+            buffer[bytesReceived] = '\0'; // Null-terminate the received data to safely treat it as a string
 
-    //        // Split the received data into separate strings
-    //        std::istringstream iss(receivedData);
-    //        std::string line;
-    //        while (std::getline(iss, line, '\n')) { // Use '\n' as the delimiter
-    //            timestamp ts;
-    //            std::cout << line << std::endl;
-    //        }
-    //    }
-    //} while (bytesReceived > 0);
+            std::string receivedData(buffer);
+            std::istringstream iss(receivedData);
+            std::string line;
+
+            while (std::getline(iss, line, '\n')) { // Process each line separated by '\n'
+                timestamp ts; // Assuming you want to use this for something, e.g., logging with a timestamp
+                std::string currentTime = ts.getCurrentTime(); // Get the current time as a string
+
+                // Log the received line with the current timestamp to the console or a file
+                std::cout << "Received at " << currentTime << ": " << line << std::endl;
+                logFile << line << std::endl; // This is what writes the log on the file
+            }
+        }
+        else if (bytesReceived == 0) {
+            std::cout << "Connection closed by the client." << std::endl;
+            break; // Exit the loop if the connection has been closed
+        }
+        else {
+            std::cerr << "Receive failed with error code: " << WSAGetLastError() << std::endl;
+            break; // Exit the loop if an error occurred
+        }
+    } while (bytesReceived > 0);
 
     closesocket(server_socket);
     WSACleanup();

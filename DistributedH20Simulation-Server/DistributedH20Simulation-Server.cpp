@@ -74,14 +74,17 @@ void bindAtoms(SOCKET oSocket, SOCKET hSocket) {
                 std::string oxygenLogString = oxygenVector[0].id + ", bonded, " + ts.getCurrentTime() + "\n";
                 std::string hydrogenLogString1 = hydrogenVector[0].id + ", bonded, " + ts.getCurrentTime() + "\n";
                 std::string hydrogenLogString2 = hydrogenVector[1].id + ", bonded, " + ts.getCurrentTime() + "\n";
+
                 std::cout << oxygenLogString;
                 std::cout << hydrogenLogString1;
                 std::cout << hydrogenLogString2;
+
                 send(oSocket, oxygenLogString.c_str(), oxygenLogString.size(), 0);
                 send(hSocket, hydrogenLogString1.c_str(), hydrogenLogString1.size(), 0);
                 send(hSocket, hydrogenLogString2.c_str(), hydrogenLogString2.size(), 0);
+
                 oxygenVector.erase(oxygenVector.begin());
-                hydrogenVector.erase(hydrogenVector.begin(), hydrogenVector.begin() + 2);
+                hydrogenVector.erase(hydrogenVector.begin(), hydrogenVector.begin() + 2); // +2 because it is exclusive.
             }
             hydrogenMtx.unlock();
         }
