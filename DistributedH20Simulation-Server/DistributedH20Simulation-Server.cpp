@@ -14,6 +14,7 @@
 
 std::mutex oxygenMtx;
 std::mutex hydrogenMtx;
+std::mutex coutMutex; // Mutex for protecting std::cout operations
 std::vector<Log> oxygenVector;
 std::vector<Log> hydrogenVector;
 std::vector<std::string> waterVector;
@@ -35,7 +36,10 @@ void acceptClient(SOCKET client_socket, int atom) {
 			std::string line;
 			while (std::getline(iss, line, '\n')) { // Use '\n' as the delimiter
                 
-                std::cout << line << ", " << ts.getCurrentTime() << std::endl;
+                {
+                    std::lock_guard<std::mutex> coutLock(coutMutex); // Protect std::cout operation
+                    std::cout << line << ", " << ts.getCurrentTime() << std::endl;
+                }
                 Log log;
                 if (atom == 0) {
                     std::lock_guard<std::mutex> lock(oxygenMtx);
@@ -54,11 +58,13 @@ void acceptClient(SOCKET client_socket, int atom) {
             }
 		}
         else if (bytesReceived == 0) {
-			std::cout << "Connection closed by peer.\n";
-		}
+            std::lock_guard<std::mutex> coutLock(coutMutex); // Protect std::cout operation
+            std::cout << "Connection closed by peer.\n";
+        }
         else {
-			std::cerr << "Receive failed.\n";
-		}
+            std::lock_guard<std::mutex> coutLock(coutMutex); // Protect std::cerr operation
+            std::cerr << "Receive failed.\n";
+        }
 	} while (bytesReceived > 0);
 
 	closesocket(client_socket);
@@ -74,10 +80,18 @@ void bindAtoms(SOCKET oSocket, SOCKET hSocket) {
                 std::string oxygenLogString = oxygenVector[0].id + ", bonded, " + ts.getCurrentTime() + "\n";
                 std::string hydrogenLogString1 = hydrogenVector[0].id + ", bonded, " + ts.getCurrentTime() + "\n";
                 std::string hydrogenLogString2 = hydrogenVector[1].id + ", bonded, " + ts.getCurrentTime() + "\n";
-
-                std::cout << oxygenLogString;
-                std::cout << hydrogenLogString1;
-                std::cout << hydrogenLogString2;
+                {
+                    std::lock_guard<std::mutex> coutLock(coutMutex);
+                    std::cout << oxygenLogString;
+                }
+                {
+                    std::lock_guard<std::mutex> coutLock(coutMutex);
+                    std::cout << hydrogenLogString1;
+                }
+                {
+                    std::lock_guard<std::mutex> coutLock(coutMutex);
+                    std::cout << hydrogenLogString2;
+                }
 
                 send(oSocket, oxygenLogString.c_str(), oxygenLogString.size(), 0);
                 send(hSocket, hydrogenLogString1.c_str(), hydrogenLogString1.size(), 0);
@@ -99,7 +113,7 @@ int main() {
         return -1;
     }
 
-    // Create a socket for clients
+    // Create a socket for O client
     SOCKET oClientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (oClientSocket == INVALID_SOCKET) {
         std::cout << "Oxygen client socket creation failed." << std::endl;
@@ -107,7 +121,7 @@ int main() {
         return 1;
     }
 
-    // Create a socket for clients
+    // Create a socket for H client
     SOCKET hClientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (hClientSocket == INVALID_SOCKET) {
         std::cout << "Hydrogen client socket creation failed." << std::endl;
@@ -119,7 +133,7 @@ int main() {
     sockaddr_in oClientAddr;
     oClientAddr.sin_family = AF_INET;
     oClientAddr.sin_port = htons(5001); // Port number
-    oClientAddr.sin_addr.s_addr = INADDR_ANY; // Accept connections from any address
+    oClientAddr.sin_addr.s_addr = INADDR_ANY; // Accept connections from any address 
 
     if (bind(oClientSocket, reinterpret_cast<sockaddr*>(&oClientAddr), sizeof(oClientAddr)) == SOCKET_ERROR) {
         std::cout << "Oxygen client socket bind failed." << std::endl;
@@ -157,8 +171,10 @@ int main() {
         WSACleanup();
         return 1;
     }
-
-    std::cout << "Server is running..." << std::endl;
+    {
+        std::lock_guard<std::mutex> coutLock(coutMutex);
+        std::cout << "Server is running..." << std::endl;
+    }
 
     SOCKET o_client_socket;
     int oClientAddrSize = sizeof(oClientAddr);
