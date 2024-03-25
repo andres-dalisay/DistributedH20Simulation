@@ -19,6 +19,8 @@ std::vector<Log> oxygenVector;
 std::vector<Log> hydrogenVector;
 std::vector<std::string> waterVector;
 
+bool isServerRunning = true;
+
 void acceptClient(SOCKET client_socket, int atom) {
 	const int bufferSize = 2048;
 	char buffer[bufferSize];
@@ -97,6 +99,7 @@ void acceptClient(SOCKET client_socket, int atom) {
         else if (bytesReceived == 0) {
             std::lock_guard<std::mutex> coutLock(coutMutex); // Protect std::cout operation
             std::cout << "Connection closed by peer.\n";
+            isServerRunning = false;
         }
         else {
             std::lock_guard<std::mutex> coutLock(coutMutex); // Protect std::cerr operation
@@ -108,7 +111,7 @@ void acceptClient(SOCKET client_socket, int atom) {
 }
 
 void bindAtoms(SOCKET oSocket, SOCKET hSocket) {
-    while (true) {
+    while (isServerRunning) {
         oxygenMtx.lock();
         if (oxygenVector.size() >= 1) {
             hydrogenMtx.lock();
@@ -246,7 +249,7 @@ int main() {
     acceptHydrogenClientThread.detach();
     bindAtomsThread.detach();
 
-    while (true) {
+    while (isServerRunning) {
 
     }
 
