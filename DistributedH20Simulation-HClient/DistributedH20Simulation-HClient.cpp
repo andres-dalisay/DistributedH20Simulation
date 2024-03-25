@@ -105,7 +105,7 @@ int main() {
     const int bufferSize = 2048;
     char buffer[bufferSize];
     int bytesReceived;
-    int i = 0;
+    int ctr = 0;
 
     do {
         bytesReceived = recv(server_socket, buffer, bufferSize - 1, 0); // Attempt to receive data, leaving space for null terminator
@@ -123,6 +123,7 @@ int main() {
                 // Log the received line with the current timestamp to the console or a file
                 std::cout << "Received at " << currentTime << ": " << line << std::endl;
                 logFile << line << std::endl; // This is what writes the log on the file
+                ctr++;
             }
         }
         else if (bytesReceived == 0) {
@@ -133,7 +134,7 @@ int main() {
             std::cerr << "Receive failed with error code: " << WSAGetLastError() << std::endl;
             break; // Exit the loop if an error occurred
         }
-    } while (bytesReceived > 0);
+    } while (bytesReceived > 0 && ctr < h_int);
 
     closesocket(server_socket);
     WSACleanup();
