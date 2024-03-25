@@ -55,10 +55,8 @@ int main() {
         std::cout << "Enter number of hydrogen atoms (LIMIT = " << H_LIMIT << "): ";
         std::cin.getline(hInput, sizeof(hInput));
 
-
         try {
             h_int = std::stoi(hInput);
-
             if (h_int < 0 || h_int > H_LIMIT) {
                 std::cerr << "Error: Invalid input. ";
                 if (h_int < 0) {
@@ -82,6 +80,7 @@ int main() {
     }
 
     std::cout << "Logging Hydrogen..." << std::endl;
+    clock_t start, end;
 
     std::ofstream logFile("hydrogen_log.txt");
     for (int i = 1; i <= h_int; i++) {
@@ -94,6 +93,9 @@ int main() {
 
         // Send the serialized log data to the server
         int bytesSent = send(server_socket, logString.c_str(), logString.size(), 0);
+        if (i == 1) {
+            start = clock();
+        }
         if (bytesSent == SOCKET_ERROR) {
             std::cerr << "Failed to send data.\n";
             closesocket(server_socket);
@@ -135,6 +137,11 @@ int main() {
             break; // Exit the loop if an error occurred
         }
     } while (bytesReceived > 0 && ctr < h_int);
+
+    end = clock();
+
+    double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+    std::cout << "Time taken by program is : " << std::fixed << time_taken << std::setprecision(5) << std::endl;
 
     closesocket(server_socket);
     WSACleanup();

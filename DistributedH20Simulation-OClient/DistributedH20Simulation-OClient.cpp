@@ -55,7 +55,6 @@ int main() {
         std::cout << "Enter number of oxygen atoms (LIMIT = " << O_LIMIT << "): ";
         std::cin.getline(oInput, sizeof(oInput));
 
-
         try {
             o_int = std::stoi(oInput);
             if (o_int < 0 || o_int > O_LIMIT) {
@@ -81,6 +80,7 @@ int main() {
     }
     
     std::cout << "Logging Oxygen..." << std::endl;
+    clock_t start, end;
 
     std::ofstream logFile("oxygen_log.txt");
     for (int i = 1; i <= o_int; i++) {
@@ -93,6 +93,9 @@ int main() {
 
         // Send the serialized log data to the server
         int bytesSent = send(server_socket, logString.c_str(), logString.size(), 0);
+        if (i == 1) {
+            start = clock();
+        }
         if (bytesSent == SOCKET_ERROR) {
             std::cerr << "Failed to send data.\n";
             closesocket(server_socket);
@@ -134,8 +137,11 @@ int main() {
             break; // Exit the loop if an error occurred
         }
     } while (bytesReceived > 0 && ctr < o_int);
+    
+    end = clock();
 
-
+    double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+    std::cout << "Time taken by program is : " << std::fixed << time_taken << std::setprecision(5) << std::endl;
 
     closesocket(server_socket);
     WSACleanup();
