@@ -89,7 +89,7 @@ int main() {
         logFile << logString << ", " << currentTime << std::endl;
 
         // Just for formatting on the server
-        logString = logString + "\n";
+        logString = "{" + logString + "}\n";
 
         // Send the serialized log data to the server
         int bytesSent = send(server_socket, logString.c_str(), logString.size(), 0);
@@ -101,7 +101,7 @@ int main() {
         }
     }
     
-    const int bufferSize = 2056;
+    const int bufferSize = 2048;
     char buffer[bufferSize];
     int bytesReceived;
     int i = 0;

@@ -20,10 +20,11 @@ std::vector<Log> hydrogenVector;
 std::vector<std::string> waterVector;
 
 void acceptClient(SOCKET client_socket, int atom) {
-	const int bufferSize = 1024;
+	const int bufferSize = 2048;
 	char buffer[bufferSize];
 	int bytesReceived;
     timestamp ts;
+    std::string tempString;
 
     do {
 		bytesReceived = recv(client_socket, buffer, bufferSize - 1, 0); // Leave space for null terminator
@@ -42,18 +43,54 @@ void acceptClient(SOCKET client_socket, int atom) {
                 }
                 Log log;
                 if (atom == 0) {
-                    std::lock_guard<std::mutex> lock(oxygenMtx);
-					std::istringstream iss(line);
-                    std::getline(iss, log.id, ','); 
-                    std::getline(iss, log.type);
-					oxygenVector.push_back(log);
+                    if ((line.find('{') != std::string::npos) && (line.find('}') != std::string::npos)) {
+                        std::lock_guard<std::mutex> lock(oxygenMtx);
+                        line = line.substr(1, line.size() - 2);
+                        std::istringstream iss(line);
+                        std::getline(iss, log.id, ',');
+                        std::getline(iss, log.type);
+                        oxygenVector.push_back(log);
+                    }
+                    else {
+                        if (tempString == "") {
+                            tempString = line;
+                        }
+                        else {
+                            tempString = tempString + line;
+							std::lock_guard<std::mutex> lock(oxygenMtx);
+                            tempString = tempString.substr(1, tempString.size() - 2);
+							std::istringstream iss(tempString);
+							std::getline(iss, log.id, ',');
+							std::getline(iss, log.type);
+							oxygenVector.push_back(log);
+							tempString = "";
+                        }   
+					}
 				}
 				else if (atom == 1) {
-					std::lock_guard<std::mutex> lock(hydrogenMtx);
-					std::istringstream iss(line);
-                    std::getline(iss, log.id, ',');
-                    std::getline(iss, log.type);
-					hydrogenVector.push_back(log);
+                    if ((line.find('{') != std::string::npos) && (line.find('}') != std::string::npos)) {
+                        std::lock_guard<std::mutex> lock(hydrogenMtx);
+                        line = line.substr(1, line.size() - 2);
+                        std::istringstream iss(line);
+                        std::getline(iss, log.id, ',');
+                        std::getline(iss, log.type);
+                        hydrogenVector.push_back(log);
+                    }
+                    else {
+                        if (tempString == "") {
+                            tempString = line;
+                        }
+                        else {
+                            tempString = tempString + line;
+                            std::lock_guard<std::mutex> lock(hydrogenMtx);
+                            tempString = tempString.substr(1, tempString.size() - 2);
+                            std::istringstream iss(tempString);
+                            std::getline(iss, log.id, ',');
+                            std::getline(iss, log.type);
+                            hydrogenVector.push_back(log);
+                            tempString = "";
+                        }
+                    }
 				}
             }
 		}
@@ -82,6 +119,10 @@ void bindAtoms(SOCKET oSocket, SOCKET hSocket) {
                 std::string hydrogenLogString2 = hydrogenVector[1].id + ", bonded, " + ts.getCurrentTime() + "\n";
                 {
                     std::lock_guard<std::mutex> coutLock(coutMutex);
+                    std::cout << oxygenVector[0].id + " | " + hydrogenVector[0].id + " | " + hydrogenVector[1].id + "\n";
+                }
+                /*{
+                    std::lock_guard<std::mutex> coutLock(coutMutex);
                     std::cout << oxygenLogString;
                 }
                 {
@@ -91,7 +132,7 @@ void bindAtoms(SOCKET oSocket, SOCKET hSocket) {
                 {
                     std::lock_guard<std::mutex> coutLock(coutMutex);
                     std::cout << hydrogenLogString2;
-                }
+                }*/
 
                 send(oSocket, oxygenLogString.c_str(), oxygenLogString.size(), 0);
                 send(hSocket, hydrogenLogString1.c_str(), hydrogenLogString1.size(), 0);
