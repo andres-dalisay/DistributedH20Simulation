@@ -10,6 +10,8 @@
 #include <cereal/archives/binary.hpp>
 #include <log.hpp>
 #include <fstream>
+#include <fstream>
+#include <set>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -268,6 +270,56 @@ int main() {
     while (isServerRunning) {
 
     }
+
+
+    std::ifstream serverSentFile("server_log_sent.txt"); // Open the file
+    std::ifstream serverHydrogenLogReceivedFile("server_hydrogen_log_received.txt");
+    std::ifstream serverOxygenLogReceivedFile("server_oxygen_log_received.txt"); 
+    if (!serverSentFile && !serverHydrogenLogReceivedFile && !serverOxygenLogReceivedFile) {
+        std::cerr << "Error opening file.\n";
+        return 1;
+    }
+
+    std::set<std::string> uniqueLinesSent; // Set to store unique lines
+    std::set<std::string> uniqueLinesHydrogenReceived; 
+    std::set<std::string> uniqueLinesOxygenReceived; 
+    std::string line;
+
+    // Read lines from the file
+    while (std::getline(serverSentFile, line)) {
+        // Check if the line is already present in the set
+        if (uniqueLinesSent.find(line) != uniqueLinesSent.end()) {
+            std::cout << "Duplicate line: " << line << std::endl;
+            break;
+        }
+        else {
+            uniqueLinesSent.insert(line); // Insert the line into the set
+        }
+    }
+   
+    while (std::getline(serverHydrogenLogReceivedFile, line)) {
+        if (uniqueLinesHydrogenReceived.find(line) != uniqueLinesHydrogenReceived.end()) {
+            std::cout << "Duplicate line: " << line << std::endl;
+            break;
+        }
+        else {
+            uniqueLinesHydrogenReceived.insert(line);
+        }
+    }
+
+    while (std::getline(serverOxygenLogReceivedFile, line)) {
+        if (uniqueLinesOxygenReceived.find(line) != uniqueLinesOxygenReceived.end()) {
+            std::cout << "Duplicate line: " << line << std::endl;
+            break;
+        }
+        else {
+            uniqueLinesOxygenReceived.insert(line);
+        }
+    }
+
+    serverSentFile.close(); // Close the file
+    serverHydrogenLogReceivedFile.close();
+    serverOxygenLogReceivedFile.close();
 
     closesocket(oClientSocket);
     closesocket(hClientSocket);

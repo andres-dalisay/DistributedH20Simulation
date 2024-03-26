@@ -14,6 +14,7 @@
 #include <sstream>
 #include <log.hpp>
 #include <thread>
+#include <set>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -84,14 +85,12 @@ void receiveData(SOCKET server_socket) {
             break; // Exit the loop if an error occurred
         }
     } while (bytesReceived > 0 && ctr < o_int);
-
     logFile.close();
     end = clock();
 }
 
 int main() {
     char oInput[100];
-
 
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
@@ -118,8 +117,6 @@ int main() {
         return 3;
     }
 
-    int o_int = 100;
-    timestamp ts;
 
     /*while (true) {
         std::cout << "Enter number of oxygen atoms (LIMIT = " << O_LIMIT << "): ";
@@ -150,9 +147,6 @@ int main() {
     }*/
     
     std::cout << "Logging Oxygen..." << std::endl;
-
-    std::ofstream logFile("oxygen_log.txt");
-    
     
     std::thread sendThread(sendData, server_socket);
     std::thread receiveThread(receiveData, server_socket);
@@ -162,6 +156,41 @@ int main() {
 
     double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
     std::cout << "Time taken by program is : " << std::fixed << time_taken << std::setprecision(5) << std::endl;
+
+
+    std::ifstream oxygenSentFile("oxygen_log_sent.txt"); // Open the file
+    std::ifstream oxygenReceivedFille("oxygen_log_received.txt");
+   
+    if (!oxygenSentFile && !oxygenReceivedFille) {
+        std::cerr << "Error opening file.\n";
+        return 1;
+    }
+
+    std::set<std::string> uniqueLinesSent; // Set to store unique lines
+    std::set<std::string> uniqueLinesReceived;
+    std::string line;
+
+    // Read lines from the file
+    while (std::getline(oxygenSentFile, line)) {
+        // Check if the line is already present in the set
+        if (uniqueLinesSent.find(line) != uniqueLinesSent.end()) {
+            std::cout << "Duplicate line: " << line << std::endl;
+            break;
+        }
+        else {
+            uniqueLinesSent.insert(line); // Insert the line into the set
+        }
+    }
+
+    while (std::getline(oxygenReceivedFille, line)) {
+        if (uniqueLinesReceived.find(line) != uniqueLinesReceived.end()) {
+            std::cout << "Duplicate line: " << line << std::endl;
+            break;
+        }
+        else {
+            uniqueLinesReceived.insert(line);
+        }
+    }
 
     closesocket(server_socket);
     WSACleanup();
