@@ -97,12 +97,12 @@ void acceptClient(SOCKET client_socket, int atom) {
             }
 		}
         else if (bytesReceived == 0) {
-            std::lock_guard<std::mutex> coutLock(coutMutex); // Protect std::cout operation
+            //std::lock_guard<std::mutex> coutLock(coutMutex); // Protect std::cout operation
             std::cout << "Connection closed by peer.\n";
             isServerRunning = false;
         }
         else {
-            std::lock_guard<std::mutex> coutLock(coutMutex); // Protect std::cerr operation
+            //std::lock_guard<std::mutex> coutLock(coutMutex); // Protect std::cerr operation
             std::cerr << "Receive failed.\n";
         }
 	} while (bytesReceived > 0);
