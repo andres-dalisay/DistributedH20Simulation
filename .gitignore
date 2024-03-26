@@ -369,3 +369,6 @@ FodyWeavers.xsd
 /DistributedH20Simulation-HClient/hydrogen_log_sent.txt
 /DistributedH20Simulation-OClient/oxygen_log_received.txt
 /DistributedH20Simulation-OClient/oxygen_log_sent.txt
+/DistributedH20Simulation-Server/server_hydrogen_log_received.txt
+/DistributedH20Simulation-Server/server_log_sent.txt
+/DistributedH20Simulation-Server/server_oxygen_log_received.txt

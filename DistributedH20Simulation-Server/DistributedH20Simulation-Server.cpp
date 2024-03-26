@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <cereal/archives/binary.hpp>
 #include <log.hpp>
+#include <fstream>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -27,6 +28,9 @@ void acceptClient(SOCKET client_socket, int atom) {
 	int bytesReceived;
     timestamp ts;
     std::string tempString;
+
+    std::ofstream logFileOxygen("server_oxygen_log_received.txt");
+    std::ofstream logFileHydrogen("server_hydrogen_log_received.txt");
 
     do {
 		bytesReceived = recv(client_socket, buffer, bufferSize - 1, 0); // Leave space for null terminator
@@ -52,6 +56,8 @@ void acceptClient(SOCKET client_socket, int atom) {
                         std::getline(iss, log.id, ',');
                         std::getline(iss, log.type);
                         oxygenVector.push_back(log);
+
+                        logFileOxygen << log.id + log.type + " " + ts.getCurrentTime() << std::endl;
                     }
                     else {
                         if (tempString == "") {
@@ -66,6 +72,7 @@ void acceptClient(SOCKET client_socket, int atom) {
 							std::getline(iss, log.type);
 							oxygenVector.push_back(log);
 							tempString = "";
+                            logFileOxygen << log.id + log.type + " " + ts.getCurrentTime() << std::endl;
                         }   
 					}
 				}
@@ -77,6 +84,7 @@ void acceptClient(SOCKET client_socket, int atom) {
                         std::getline(iss, log.id, ',');
                         std::getline(iss, log.type);
                         hydrogenVector.push_back(log);
+                        logFileHydrogen << log.id + log.type + " " + ts.getCurrentTime() << std::endl;
                     }
                     else {
                         if (tempString == "") {
@@ -91,6 +99,7 @@ void acceptClient(SOCKET client_socket, int atom) {
                             std::getline(iss, log.type);
                             hydrogenVector.push_back(log);
                             tempString = "";
+                            logFileHydrogen << log.id + log.type + " " + ts.getCurrentTime() << std::endl;
                         }
                     }
 				}
@@ -107,10 +116,14 @@ void acceptClient(SOCKET client_socket, int atom) {
         }
 	} while (bytesReceived > 0);
 
+    logFileOxygen.close();
+	logFileHydrogen.close();
 	closesocket(client_socket);
 }
 
 void bindAtoms(SOCKET oSocket, SOCKET hSocket) {
+    std::ofstream logFile("server_log_sent.txt");
+
     while (isServerRunning) {
         oxygenMtx.lock();
         if (oxygenVector.size() >= 1) {
@@ -141,6 +154,8 @@ void bindAtoms(SOCKET oSocket, SOCKET hSocket) {
                 send(hSocket, hydrogenLogString1.c_str(), hydrogenLogString1.size(), 0);
                 send(hSocket, hydrogenLogString2.c_str(), hydrogenLogString2.size(), 0);
 
+                logFile << oxygenVector[0].id + " | " + hydrogenVector[0].id + " | " + hydrogenVector[1].id + " " + ts.getCurrentTime() << std::endl;
+
                 oxygenVector.erase(oxygenVector.begin());
                 hydrogenVector.erase(hydrogenVector.begin(), hydrogenVector.begin() + 2); // +2 because it is exclusive.
             }
@@ -148,6 +163,7 @@ void bindAtoms(SOCKET oSocket, SOCKET hSocket) {
         }
         oxygenMtx.unlock();
     }
+    logFile.close();
 }
 
 int main() {
