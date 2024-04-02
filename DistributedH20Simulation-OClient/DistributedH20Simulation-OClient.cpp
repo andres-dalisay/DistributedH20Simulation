@@ -10,48 +10,87 @@
 #include <chrono>
 #include <ctime>
 #include <format>
+#include <fstream>
 #include <sstream>
-#include <cereal/archives/binary.hpp>
 #include <log.hpp>
+#include <thread>
+#include <set>
 
 #pragma comment(lib, "ws2_32.lib")
 
 #define MASTER_SERVER_IP "127.0.0.1"
-#define H_LIMIT 1048576
+#define O_LIMIT 1048576
 
+int o_int = 100;
+clock_t start, end;
 
+void sendData(SOCKET server_socket) {
+    timestamp ts;
 
+    std::ofstream logFile("oxygen_log_sent.txt");
+    for (int i = 1; i <= o_int; i++) {
+        std::string currentTime = ts.getCurrentTime(); // Gets Current Timestamp to print on Logs
+        std::string logString = "O" + std::string(std::to_string(i)) + ", request";
+        logFile << logString << ", " << currentTime << std::endl;
 
-// Function to serialize a vector of integers into a byte stream
-std::vector<char> serializeVector(const std::vector<int>& vec) {
-    std::vector<char> bytes;
-    // Assuming integers are 4 bytes each
-    for (int num : vec) {
-        // Convert each integer to bytes
-        char* numBytes = reinterpret_cast<char*>(&num);
-        for (size_t i = 0; i < sizeof(num); ++i) {
-            bytes.push_back(numBytes[i]);
+        // Just for formatting on the server
+        logString = "{" + logString + "}\n";
+
+        // Send the serialized log data to the server
+        int bytesSent = send(server_socket, logString.c_str(), logString.size(), 0);
+        if (i == 1) {
+            start = clock();
+        }
+        if (bytesSent == SOCKET_ERROR) {
+            std::cerr << "Failed to send data.\n";
+            closesocket(server_socket);
+            WSACleanup();
+            break;
         }
     }
-    return bytes;
+    logFile.close();
 }
 
-// Function to deserialize a byte stream into a vector of integers
-std::vector<int> deserializeVector(const std::vector<char>& bytes) {
-    std::vector<int> vec;
-    // Assuming integers are 4 bytes each
-    for (size_t i = 0; i < bytes.size(); i += sizeof(int)) {
-        int num;
-        // Convert bytes back to integer
-        memcpy(&num, &bytes[i], sizeof(int));
-        vec.push_back(num);
-    }
-    return vec;
+void receiveData(SOCKET server_socket) {
+    const int bufferSize = 2048;
+    char buffer[bufferSize];
+    int bytesReceived;
+    int ctr = 0;
+    std::ofstream logFile("oxygen_log_received.txt");
+    do {
+        bytesReceived = recv(server_socket, buffer, bufferSize - 1, 0); // Attempt to receive data, leaving space for null terminator
+        if (bytesReceived > 0) {
+            buffer[bytesReceived] = '\0'; // Null-terminate the received data to safely treat it as a string
+
+            std::string receivedData(buffer);
+            std::istringstream iss(receivedData);
+            std::string line;
+
+            while (std::getline(iss, line, '\n')) { // Process each line separated by '\n'
+                timestamp ts; // Assuming you want to use this for something, e.g., logging with a timestamp
+                std::string currentTime = ts.getCurrentTime(); // Get the current time as a string
+
+                // Log the received line with the current timestamp to the console or a file
+                std::cout << "Received at " << currentTime << ": " << line << std::endl;
+                logFile << line << std::endl; // This is what writes the log on the file
+                ctr++;
+            }
+        }
+        else if (bytesReceived == 0) {
+            std::cout << "Connection closed by the client." << std::endl;
+            break; // Exit the loop if the connection has been closed
+        }
+        else {
+            std::cerr << "Receive failed with error code: " << WSAGetLastError() << std::endl;
+            break; // Exit the loop if an error occurred
+        }
+    } while (bytesReceived > 0 && ctr < o_int);
+    logFile.close();
+    end = clock();
 }
 
 int main() {
     char oInput[100];
-
 
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
@@ -78,22 +117,19 @@ int main() {
         return 3;
     }
 
-    int o_int;
 
-    while (true) {
-        std::cout << "Enter number of oxygen atoms: ";
+    /*while (true) {
+        std::cout << "Enter number of oxygen atoms (LIMIT = " << O_LIMIT << "): ";
         std::cin.getline(oInput, sizeof(oInput));
 
-
         try {
-
             o_int = std::stoi(oInput);
-            if (o_int < 0 || o_int > H_LIMIT) {
+            if (o_int < 0 || o_int > O_LIMIT) {
                 std::cerr << "Error: Invalid input. ";
                 if (o_int < 0) {
                     std::cerr << "Input must be positive. ";
                 }
-                if (o_int > H_LIMIT) {
+                if (o_int > O_LIMIT) {
                     std::cerr << "Input must be less than 1048576. ";
                 }
                 std::cerr << "Please try again." << std::endl;
@@ -108,36 +144,53 @@ int main() {
         catch (const std::out_of_range& e) {
             std::cerr << "Error: Input out of range." << std::endl;
         }
+    }*/
+    
+    std::cout << "Logging Oxygen..." << std::endl;
+    
+    std::thread sendThread(sendData, server_socket);
+    std::thread receiveThread(receiveData, server_socket);
+
+    sendThread.join();
+    receiveThread.join();
+
+    double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+    std::cout << "Time taken by program is : " << std::fixed << time_taken << std::setprecision(5) << std::endl;
+
+
+    std::ifstream oxygenSentFile("oxygen_log_sent.txt"); // Open the file
+    std::ifstream oxygenReceivedFille("oxygen_log_received.txt");
+   
+    if (!oxygenSentFile && !oxygenReceivedFille) {
+        std::cerr << "Error opening file.\n";
+        return 1;
     }
 
-    freopen("oxygen_log.txt", "w", stdout);
-    for (int i = 1; i <= o_int; i++) {
-        Log log;
-        log.id = "O" + std::to_string(i);
-        log.type = "request";
-        std::stringstream ss;
-        {
-            cereal::BinaryOutputArchive oarchive(ss);
-            oarchive(log);
+    std::set<std::string> uniqueLinesSent; // Set to store unique lines
+    std::set<std::string> uniqueLinesReceived;
+    std::string line;
+
+    // Read lines from the file
+    while (std::getline(oxygenSentFile, line)) {
+        // Check if the line is already present in the set
+        if (uniqueLinesSent.find(line) != uniqueLinesSent.end()) {
+            std::cout << "Duplicate line: " << line << std::endl;
+            break;
         }
-        // get the current timestamp
-        auto now = std::chrono::system_clock::now();
-        // print the current timestamp
-        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-        std::tm* local_time = std::localtime(&now_c);
-        std::ostringstream oss;
-        oss << std::put_time(local_time, "%Y-%m-%d %H:%M:%S");
-        std::string formatted_time = oss.str();
+        else {
+            uniqueLinesSent.insert(line); // Insert the line into the set
+        }
+    }
 
-        std::printf("%s, %s, %s\n", log.id.c_str(), log.type.c_str(), formatted_time.c_str());
-
-        // Serialize the log struct
-        std::string serializedLog = ss.str();
-        // Send the serialized log data to the server
-        send(server_socket, serializedLog.c_str(), serializedLog.size(), 0);
-
-	}
-    fclose(stdout);
+    while (std::getline(oxygenReceivedFille, line)) {
+        if (uniqueLinesReceived.find(line) != uniqueLinesReceived.end()) {
+            std::cout << "Duplicate line: " << line << std::endl;
+            break;
+        }
+        else {
+            uniqueLinesReceived.insert(line);
+        }
+    }
 
     closesocket(server_socket);
     WSACleanup();
